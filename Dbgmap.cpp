@@ -8,7 +8,7 @@
 using namespace llvm;
 
 namespace {
-  int newLine = 777;
+  int newLine = 77777;
   struct DbgmapPass : public FunctionPass {
     static char ID;
     DbgmapPass() : FunctionPass(ID) {}
@@ -21,10 +21,12 @@ namespace {
 	  DILocation *dil = loc.get();
 	  //loc.dump();
 	  //errs() << "\n";
-	  DILocation *newdil = DILocation::get(F.getContext(), newLine++, 0, dil->getScope());
+	  if (dil) {
+	    DILocation *newdil = DILocation::get(F.getContext(), newLine++, 0, dil->getScope());
 
-	  auto newloc = new DebugLoc(newdil);
-	  I.setDebugLoc(*newloc);
+	    auto newloc = new DebugLoc(newdil);
+	    I.setDebugLoc(*newloc);
+	  }
 	  //newloc->dump();
 	  //errs() << "\n";	  
 	}
