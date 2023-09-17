@@ -8,7 +8,7 @@
 using namespace llvm;
 
 namespace {
-  int newLine = 77777;
+  int newDisc = 777777;
   struct DbgmapPass : public FunctionPass {
     static char ID;
     DbgmapPass() : FunctionPass(ID) {}
@@ -17,18 +17,15 @@ namespace {
       
       for (auto &BB : F) {
         for (auto &I : BB) {
-	  auto loc = I.getDebugLoc();
-	  DILocation *dil = loc.get();
-	  //loc.dump();
-	  //errs() << "\n";
-	  if (dil) {
-	    DILocation *newdil = DILocation::get(F.getContext(), newLine++, 0, dil->getScope());
-
-	    auto newloc = new DebugLoc(newdil);
-	    I.setDebugLoc(*newloc);
+	  const DILocation *DIL = I.getDebugLoc();
+	  if (DIL) {
+	    auto Discriminator = ++newDisc;
+	    const DILocation *NewDIL = DIL->cloneWithDiscriminator(Discriminator);
+	    if (NewDIL) {
+	      auto NewLoc = new DebugLoc(NewDIL);
+	      I.setDebugLoc(*NewLoc);
+	    }
 	  }
-	  //newloc->dump();
-	  //errs() << "\n";	  
 	}
       }
       return false;
@@ -52,7 +49,7 @@ static RegisterStandardPasses
 #endif
 
 static RegisterPass<DbgmapPass>
-    X("hello-world", "Hello World Pass",
+    X("dbgmap", "Dbgmap Pass",
       true, // This pass doesn't modify the CFG => true
       false // This pass is not a pure analysis pass => false
     );
