@@ -1,6 +1,7 @@
 #include "llvm/Pass.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/DebugLoc.h"
+#include "llvm/IR/Instructions.h"
 #include "llvm/IR/DebugInfoMetadata.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/IR/LegacyPassManager.h"
@@ -8,22 +9,39 @@
 using namespace llvm;
 
 namespace {
-  int newDisc = 777777;
+  int newDisc = 77;
+  using Location = std::pair<StringRef, unsigned>;
+  using LocationDiscriminatorMap = DenseMap<Location, unsigned>;
   struct DbgmapPass : public FunctionPass {
     static char ID;
     DbgmapPass() : FunctionPass(ID) {}
 
     virtual bool runOnFunction(Function &F) {
       
+      LocationDiscriminatorMap LDM;
       for (auto &BB : F) {
         for (auto &I : BB) {
-	  const DILocation *DIL = I.getDebugLoc();
-	  if (DIL) {
-	    auto Discriminator = ++newDisc;
-	    const DILocation *NewDIL = DIL->cloneWithDiscriminator(Discriminator);
-	    if (NewDIL) {
-	      auto NewLoc = new DebugLoc(NewDIL);
-	      I.setDebugLoc(*NewLoc);
+	  if (1) {
+	    const DILocation *DIL = I.getDebugLoc();
+	    if (DIL) {
+#if 1
+	      auto Discriminator = ++newDisc;
+	      auto NewDIL = DIL->cloneWithBaseDiscriminator(Discriminator);
+	      if (NewDIL != std::nullopt) {
+		I.setDebugLoc(*NewDIL);
+	      } else {
+		assert(0);
+	      } 
+#else
+	      Location L = std::make_pair(DIL->getFilename(), DIL->getLine());
+	      auto Discriminator = ++LDM[L];
+	      auto NewDIL = DIL->cloneWithBaseDiscriminator(Discriminator);
+	      if (NewDIL != std::nullopt) {
+		I.setDebugLoc(*NewDIL);
+	      } else {
+		assert(0);
+	      }
+#endif
 	    }
 	  }
 	}
